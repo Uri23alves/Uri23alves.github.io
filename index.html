@@ -275,7 +275,7 @@
 <div class="container">
 
   <header class="header">
-    <div class="brand">Uriel Alves · Diseño UX/UI</div>
+    <div class="brand">Urmalú Marketing · Diseño UX/UI</div>
     <h1 class="title">Yaguarete — Tiendanube</h1>
     <p class="subtitle">Seguimiento del proyecto en tiempo real</p>
   </header>
@@ -293,7 +293,7 @@
   <div class="phases" id="phases-container"></div>
 
   <footer class="footer">
-    Tu feedback queda guardado en este dispositivo.
+    Tu feedback se envía al formulario del proyecto y también queda guardado en este dispositivo.
   </footer>
 
 </div>
@@ -338,6 +338,18 @@ try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch(e)
 
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); } catch(e) {}
+}
+
+const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScfw2Pv-GpFv2A2Tyo_sNlFmT8YEhu-7PNWs3WAjekviGNDaA/formResponse";
+const FIELD_PHASE = "entry.1567180102";
+const FIELD_STATUS = "entry.1034283885";
+const FIELD_COMMENT = "entry.2095794814";
+
+function mapStatusToFormValue(status) {
+  if (status === "ok") return "Ok";
+  if (status === "doubt") return "Dobout";
+  if (status === "change") return "Change";
+  return "";
 }
 
 function render() {
@@ -411,17 +423,34 @@ function render() {
     });
   });
 
-  container.querySelectorAll(".fb-send").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      const id = parseInt(btn.dataset.phase);
-      const textarea = document.getElementById("comment-" + id);
-      stored[id] = stored[id] || {};
-      if (textarea) stored[id].comment = textarea.value;
+container.querySelectorAll(".fb-send").forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    const id = parseInt(btn.dataset.phase);
+    const textarea = document.getElementById("comment-" + id);
+    const phase = phases.find(p => p.id === id);
+
+    stored[id] = stored[id] || {};
+    if (textarea) stored[id].comment = textarea.value;
+
+    const formData = new FormData();
+    formData.append(FIELD_PHASE, phase ? phase.name : "");
+    formData.append(FIELD_STATUS, mapStatusToFormValue(stored[id].reaction || ""));
+    formData.append(FIELD_COMMENT, stored[id].comment || "");
+
+    try {
+      fetch(FORM_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: formData
+      });
       stored[id].sent = true;
       save();
       render();
-    });
+    } catch (e) {
+      alert("Error enviando feedback. Intentá de nuevo.");
+    }
   });
+});
 }
 
 render();
